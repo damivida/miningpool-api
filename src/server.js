@@ -423,9 +423,80 @@ const ltcScraping = async () => {
    res.send({etcMiningPools});
 }
 ltcScraping();
+   
+});
+
+
+//**********************************************BTC mining pools**********************************
+
+
+app.get('/miningPools/BTC', (req, res) => {
+   
+  const whatToMineUrl = `https://whattomine.com/coins/1.json?hr=1000&p=0.0&fee=0&cost=0&hcost=0.07`;
+  const viaBtcUrl = `https://www.viabtc.com/res/tools/calculator?coin=BTC`;
+  const poolInUrl = 'https://api-prod.poolin.com/api/public/v2/basedata/coins/block_stats';
+  const btcComUrl = 'https://btc.com/service/price/coins-income';
   
+  const whatToMineRequest = axios.get(whatToMineUrl);
+  const viaBtcRequest = axios.get(viaBtcUrl);
+  const poolInRequest = axios.get(poolInUrl);
+  const btcComRequest = axios.get(btcComUrl);
+  
+  
+  axios.all([whatToMineRequest, viaBtcRequest, poolInRequest, btcComRequest]).then(axios.spread((...responses) => {
+    const whatToMineResponse = responses[0].data;
+    const viaBtcResponse = responses[1].data;
+    const poolInResponse = responses[2].data;
+    const btcComResponse = responses[3].data;
+  
+   
+    const whatToMineData = {
+      poolName: "WhatToMine",
+      profitability: whatToMineResponse["btc_revenue"],
+      url: 'https://whattomine.com/coins/1-btc-sha-256?hr=1000000&p=2800.0&fee=0.0&cost=0.0&hcost=0.0&commit=Calculate'
+    }
+  
+    const viaBtcData = {
+      poolName: "ViaBtc",
+      profitability: viaBtcResponse["data"][0]["profit"]["BTC"],
+      url: 'https://www.viabtc.com/tools/calculator?symbol=BTC'
+    }
+  
+    const poolInData = {
+      poolName: "Poolin",
+      profitability: poolInResponse["data"]["BTC"]["rewards_per_unit"],
+      url: 'https://www.poolin.com/tools/mini-calc?type=btc'
+    }
+
+    const btcComData = {
+      poolName: "BtcCom",
+      profitability: btcComResponse["data"]["btc"]["income_optimize_coin"].toFixed(8).toString(),
+      url: 'https://btc.com/tools/mini-mining-calculator'
+    }
+  
+  
+  let allProfArr = [parseFloat(whatToMineData.profitability), parseFloat(viaBtcData.profitability), parseFloat(poolInData.profitability), parseFloat(btcComData.profitability)];
+    
+   const avgBtcMiningProf = {
+      avgBtcProf: averageFunc(allProfArr)
+   }
+  
+    const btcMiningPools = {whatToMineData, viaBtcData, poolInData, btcComData, avgBtcMiningProf};
+    res.send({btcMiningPools});  
+  
+  })).catch(errors => {
+     console.log(errors);
+  })
   
   });
+
+
+
+
+
+
+
+
 
 
 
