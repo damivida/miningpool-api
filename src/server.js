@@ -429,7 +429,6 @@ ltcScraping();
 
 //**********************************************BTC mining pools**********************************
 
-
 app.get('/miningPools/BTC', (req, res) => {
    
   const whatToMineUrl = `https://whattomine.com/coins/1.json?hr=1000&p=0.0&fee=0&cost=0&hcost=0.07`;
@@ -491,12 +490,320 @@ app.get('/miningPools/BTC', (req, res) => {
   });
 
 
+//**********************************************BCH mining pools**********************************
+
+app.get('/miningPools/BCH', (req, res) => {
+   
+  const whatToMineUrl = `https://whattomine.com/coins/193.json?hr=1000&p=0.0&fee=0&cost=0&hcost=0.07`;
+  const viaBtcUrl = `https://www.viabtc.com/res/tools/calculator?coin=BCH`;
+  const poolInUrl = 'https://api-prod.poolin.com/api/public/v2/basedata/coins/block_stats';
+  const btcComUrl = 'https://btc.com/service/price/coins-income';
+  
+  const whatToMineRequest = axios.get(whatToMineUrl);
+  const viaBtcRequest = axios.get(viaBtcUrl);
+  const poolInRequest = axios.get(poolInUrl);
+  const btcComRequest = axios.get(btcComUrl);
+  
+  
+  axios.all([whatToMineRequest, viaBtcRequest, poolInRequest, btcComRequest]).then(axios.spread((...responses) => {
+    const whatToMineResponse = responses[0].data;
+    const viaBtcResponse = responses[1].data;
+    const poolInResponse = responses[2].data;
+    const btcComResponse = responses[3].data;
+  
+   
+    const whatToMineData = {
+      poolName: "WhatToMine",
+      profitability: whatToMineResponse["estimated_rewards"],
+      url: 'https://whattomine.com/coins/193-bch-sha-256?hr=1000&p=2800.0&fee=0.0&cost=0.0&hcost=0.0&commit=Calculate'
+    }
+  
+    const viaBtcData = {
+      poolName: "ViaBtc",
+      profitability: viaBtcResponse["data"][0]["profit"]["BCH"],
+      url: 'https://www.viabtc.com/tools/calculator?symbol=BCH'
+    }
+  
+    const poolInData = {
+      poolName: "Poolin",
+      profitability: poolInResponse["data"]["BCH"]["rewards_per_unit"],
+      url: 'https://www.poolin.com/tools/mini-calc?type=btc'
+    }
+
+    const btcComData = {
+      poolName: "BtcCom",
+      profitability: btcComResponse["data"]["bch"]["income_coin"].toFixed(8).toString(),
+      url: 'https://btc.com/tools/mini-mining-calculator'
+    }
+  
+  
+  let allProfArr = [parseFloat(whatToMineData.profitability), parseFloat(viaBtcData.profitability), parseFloat(poolInData.profitability), parseFloat(btcComData.profitability)];
+    
+   const avgBchMiningProf = {
+      avgBchProf: averageFunc(allProfArr)
+   }
+  
+    const bchMiningPools = {whatToMineData, viaBtcData, poolInData, btcComData, avgBchMiningProf};
+    res.send({bchMiningPools});  
+  
+  })).catch(errors => {
+     console.log(errors);
+  })
+  
+  });
 
 
+//**********************************************DASH mining pools**********************************
+
+app.get('/miningPools/DASH', (req, res) => {
+   
+  const whatToMineUrl = `https://whattomine.com/coins/34.json?hr=1000&p=0.0&fee=0&cost=0&hcost=0.07`;
+  const viaBtcUrl = `https://www.viabtc.com/res/tools/calculator?coin=DASH`;
+  const poolInUrl = 'https://api-prod.poolin.com/api/public/v2/basedata/coins/block_stats';
+  
+  const whatToMineRequest = axios.get(whatToMineUrl);
+  const viaBtcRequest = axios.get(viaBtcUrl);
+  const poolInRequest = axios.get(poolInUrl);
+
+  
+  axios.all([whatToMineRequest, viaBtcRequest, poolInRequest]).then(axios.spread((...responses) => {
+    const whatToMineResponse = responses[0].data;
+    const viaBtcResponse = responses[1].data;
+    const poolInResponse = responses[2].data;
+  
+    let whatToMineProf = whatToMineResponse["estimated_rewards"]/1000;
+    whatToMineProf = whatToMineProf.toFixed(8).toString();
+
+    let viaBtcProf = viaBtcResponse["data"][0]["profit"]["DASH"]/1000;
+    viaBtcProf = viaBtcProf.toFixed(8).toString();
+
+    let poolInProf = poolInResponse["data"]["DASH"]["rewards_per_unit"]/1000;
+    poolInProf = poolInProf.toFixed(8).toString();
 
 
+    const whatToMineData = {
+      poolName: "WhatToMine",
+      profitability: whatToMineProf,
+      url: 'https://whattomine.com/coins/34-dash-x11?hr=1000&p=1800.0&fee=0.0&cost=0.0&hcost=0.0&commit=Calculate'
+    }
+  
+    const viaBtcData = {
+      poolName: "ViaBtc",
+      profitability: viaBtcProf,
+      url: 'https://www.viabtc.com/tools/calculator?symbol=DASH'
+    }
+  
+    const poolInData = {
+      poolName: "Poolin",
+      profitability: poolInProf,
+      url: 'https://www.poolin.com/tools/mini-calc?type=dash'
+    }
+
+  
+  let allProfArr = [parseFloat(whatToMineData.profitability), parseFloat(viaBtcData.profitability), parseFloat(poolInData.profitability)];
+    
+   const avgDashMiningProf = {
+      avgDashProf: averageFunc(allProfArr)
+   }
+  
+    const dashMiningPools = {whatToMineData, viaBtcData, poolInData, avgDashMiningProf};
+    res.send({dashMiningPools});  
+  
+  })).catch(errors => {
+     console.log(errors);
+  })
+  
+  });
 
 
+  //**********************************************ZEC mining pools**********************************
+
+  app.get('/miningPools/ZEC', (req, res) => {
+   
+    const whatToMineUrl = `https://whattomine.com/coins/166.json?hr=1000&p=0.0&fee=0&cost=0&hcost=0.07`;
+    const viaBtcUrl = `https://www.viabtc.com/res/tools/calculator?coin=ZEC`;
+    const poolInUrl = 'https://api-prod.poolin.com/api/public/v2/basedata/coins/block_stats';
+    
+    const whatToMineRequest = axios.get(whatToMineUrl);
+    const viaBtcRequest = axios.get(viaBtcUrl);
+    const poolInRequest = axios.get(poolInUrl);
+  
+    
+    axios.all([whatToMineRequest, viaBtcRequest, poolInRequest]).then(axios.spread((...responses) => {
+      const whatToMineResponse = responses[0].data;
+      const viaBtcResponse = responses[1].data;
+      const poolInResponse = responses[2].data;
+    
+      let whatToMineProf = whatToMineResponse["estimated_rewards"]/1000;
+      whatToMineProf = whatToMineProf.toFixed(8).toString();
+  
+      let viaBtcProf = viaBtcResponse["data"][0]["profit"]["ZEC"]/1000;
+      viaBtcProf = viaBtcProf.toFixed(8).toString();
+  
+      let poolInProf = poolInResponse["data"]["ZEC"]["rewards_per_unit"]/1000;
+      poolInProf = poolInProf.toFixed(8).toString();
+  
+  
+      const whatToMineData = {
+        poolName: "WhatToMine",
+        profitability: whatToMineProf,
+        url: 'https://whattomine.com/coins/166-zec-equihash?hr=1000&p=1420.0&fee=0.0&cost=0.0&hcost=0.0&commit=Calculate'
+      }
+    
+      const viaBtcData = {
+        poolName: "ViaBtc",
+        profitability: viaBtcProf,
+        url: 'https://www.viabtc.com/tools/calculator?symbol=ZEC'
+      }
+    
+      const poolInData = {
+        poolName: "Poolin",
+        profitability: poolInProf,
+        url: 'https://www.poolin.com/tools/mini-calc?type=zec'
+      }
+  
+    
+    let allProfArr = [parseFloat(whatToMineData.profitability), parseFloat(viaBtcData.profitability), parseFloat(poolInData.profitability)];
+      
+     const avgZecMiningProf = {
+        avgZecProf: averageFunc(allProfArr)
+     }
+    
+      const dashMiningPools = {whatToMineData, viaBtcData, poolInData, avgZecMiningProf};
+      res.send({dashMiningPools});  
+    
+    })).catch(errors => {
+       console.log(errors);
+    })
+    
+    });
+
+//********************************************** XMR mining pools**********************************
+app.get('/miningPools/XMR', (req, res) => {
+   
+  const whatToMineUrl = `https://whattomine.com/coins/101.json?hr=1000&p=0.0&fee=0&cost=0&hcost=0.07`;
+  const viaBtcUrl = `https://www.viabtc.com/res/tools/calculator?coin=XMR`;
+  
+  const whatToMineRequest = axios.get(whatToMineUrl);
+  const viaBtcRequest = axios.get(viaBtcUrl);
+
+
+  
+  axios.all([whatToMineRequest, viaBtcRequest]).then(axios.spread((...responses) => {
+    const whatToMineResponse = responses[0].data;
+    const viaBtcResponse = responses[1].data;
+    
+    let whatToMineProf = whatToMineResponse["estimated_rewards"]/1000;
+    whatToMineProf = whatToMineProf.toFixed(8).toString();
+
+    let viaBtcProf = viaBtcResponse["data"][0]["profit"]["XMR"]/1000;
+    viaBtcProf = viaBtcProf.toFixed(8).toString();
+
+    const whatToMineData = {
+      poolName: "WhatToMine",
+      profitability: whatToMineProf,
+      url: 'https://whattomine.com/coins/101-xmr-cryptonightr?hr=1000&p=270.0&fee=0.0&cost=0.0&hcost=0.0&commit=Calculate'
+    }
+  
+    const viaBtcData = {
+      poolName: "ViaBtc",
+      profitability: viaBtcProf,
+      url: 'https://www.viabtc.com/tools/calculator?symbol=XMR'
+    }
+  
+  
+  let allProfArr = [parseFloat(whatToMineData.profitability), parseFloat(viaBtcData.profitability)];
+    
+   const avgXmrMiningProf = {
+      avgXmrProf: averageFunc(allProfArr)
+   }
+  
+    const xmrMiningPools = {whatToMineData, viaBtcData, avgXmrMiningProf};
+    res.send({xmrMiningPools});  
+  
+  })).catch(errors => {
+     console.log(errors);
+  })
+  
+  });
+
+//********************************************** XMC mining pools**********************************
+app.get('/miningPools/XMC', (req, res) => {
+   
+  const coinCalculatorsUrl = 'https://www.coincalculators.io/api?name=monero-classic&hashrate=1&power=0&poolfee=0&powercost=0&difficultytime=24';
+  
+  const coinCalculatorsRequest = axios.get(coinCalculatorsUrl);
+  
+
+  axios.all([coinCalculatorsRequest]).then(axios.spread((...responses) => {
+    const coincalculatorsResponse = responses[0].data;
+
+    const coinCalculatorsData = {
+      poolName: "CoinCalculators",
+      profitability: coincalculatorsResponse["rewardsInDay"].toFixed(8).toString(),
+      url: 'https://www.coincalculators.io/coin/monero-classic?Hashrate=1&HashFactor=h&Watt=140&ElectricityPrice=0&PoolFee=0&HardwareCost=0&LH=&Difficulty=24'
+    }
+  
+   
+  let allProfArr = [parseFloat(coinCalculatorsData.profitability)];
+    
+   const avgXmcMiningProf = {
+      avgXmcProf: averageFunc(allProfArr)
+   }
+  
+    const xmcMiningPools = {coinCalculatorsData, avgXmcMiningProf};
+    res.send({xmcMiningPools});  
+  
+  })).catch(errors => {
+     console.log(errors);
+  })
+  
+  });
+
+
+//********************************************** BEAM mining pools**********************************
+
+app.get('/miningPools/BEAM', (req, res) => {
+   
+  const whatToMineUrl = `https://whattomine.com/coins/294.json?hr=1&p=0.0&fee=0&cost=0&hcost=0.0`
+  const coinCalculatorsUrl = 'https://www.coincalculators.io/api?name=beam&hashrate=1&power=0&poolfee=0&powercost=0&difficultytime=24';
+  
+  const whatToMineRequest = axios.get(whatToMineUrl);
+  const coinCalculatorsRequest = axios.get(coinCalculatorsUrl);
+  
+  
+  axios.all([whatToMineRequest, coinCalculatorsRequest]).then(axios.spread((...responses) => {
+    const whatToMineResponse = responses[0].data;
+    const coincalCulatorsResponse = responses[1].data;
+
+    const whatToMineData = {
+      poolName: "WhatToMine",
+      profitability: whatToMineResponse["estimated_rewards"],
+      url: 'https://whattomine.com/coins/294-beam-beamhashiii?hr=1&p=390.0&fee=0.0&cost=0.0&hcost=0.0&commit=Calculate'
+
+    }
+
+    const coinCalculatorsData = {
+      poolName: "CoinCalculators",
+      profitability: coincalCulatorsResponse["rewardsInDay"].toFixed(8).toString(),
+      url: 'https://www.coincalculators.io/coin/beam?Hashrate=1&HashFactor=h&Watt=200&ElectricityPrice=0.0&PoolFee=0&HardwareCost=0&LH=&Difficulty=24'
+    }
+  
+   
+  let allProfArr = [parseFloat(coinCalculatorsData.profitability), parseFloat(whatToMineData.profitability)];
+    
+   const avgBeamMiningProf = {
+      avgBeamProf: averageFunc(allProfArr)
+   }
+  
+    const beamMiningPools = {whatToMineData, coinCalculatorsData, avgBeamMiningProf};
+    res.send({beamMiningPools});  
+  
+  })).catch(errors => {
+     console.log(errors);
+  })
+  
+  });
 
 
 
