@@ -1040,14 +1040,147 @@ app.get('/miningPools/ZEC', (req, res) => {
       avgZecProf: averageFunc(allProfArr)
     }
 
-    const dashMiningPools = { whatToMineData, viaBtcData, poolInData, avgZecMiningProf };
-    res.send({ dashMiningPools });
+    const zecMiningPools = { whatToMineData, viaBtcData, poolInData, avgZecMiningProf };
+    res.send({ zecMiningPools });
 
   })).catch(errors => {
     console.log(errors);
   })
 
 });
+
+//-------------------------ZEC scraping
+
+
+app.get('/miningPools/zec/crawler', (req, res) => {
+
+async function miningPoolHubZEC(page) {
+
+  await page.setDefaultNavigationTimeout(0);
+  await page.goto('https://zcash.miningpoolhub.com/index.php?page=statistics&action=pool');
+  const html = await page.content();
+  const $ = cheerio.load(html);
+
+  const poolName = 'Mining Pool Hub - ZEC';
+  let lastBlockTime = $("#main > div:nth-child(2) > article:nth-child(2) > div > table > tbody > tr:nth-child(8) > td").text();
+  let hp = parseFloat($("#main > div:nth-child(2) > article:nth-child(1) > div > table > tbody > tr:nth-child(1) > td:nth-child(4)")
+    .text()
+    .replace(',', '')
+    .replace(',', '')
+    .replace(',', ''));
+
+  let coinsPerDay = parseFloat($("#main > div:nth-child(2) > article:nth-child(1) > div > table > tbody > tr:nth-child(1) > td:nth-child(5)").text());
+  let prof = (coinsPerDay / hp)/1000;
+  let profitability = profRound(prof)
+  let url = 'https://zcash.miningpoolhub.com/index.php?page=statistics&action=pool';
+
+  //console.log({poolName, hp, coinsPerDay, profitability, lastBlockTime});
+
+  return ({ poolName, hp, coinsPerDay, profitability, lastBlockTime, url });
+
+}
+
+  //COINOTRON
+  async function coinotronZEC(page) {
+
+    try {
+
+    const browser = await puppeteer.launch({headless:true});
+    const page = await browser.newPage(); 
+
+      await page.setDefaultNavigationTimeout(0);
+      await page.goto('https://www.coinotron.com/app?action=statistics');
+      const html = await page.content();
+      const $ = cheerio.load(html);
+
+      const poolName = 'Coinotron - ZEC';
+      const lastBlockTime = $('#row0TableSolvedBlocksZEC > td:nth-child(2)').text();
+      let hp = parseFloat($("#row0TableBestMinersZEC > td:nth-child(3)").text().replace(' KH', ''));
+      let coinsPerDay = parseFloat($("#row0TableBestMinersZEC > td:nth-child(4)").text());
+      let prof = (coinsPerDay / hp) / 1000;
+      let profitability = profRound(prof)
+      let url = 'https://www.coinotron.com/app?action=statistics';
+
+
+      //console.log({ poolName, hp, coinsPerDay, profitability, lastBlockTime, url });
+      return ({ poolName, hp, coinsPerDay, profitability, lastBlockTime, url });
+
+    } catch (err) {
+      console.log(err);
+
+    }
+
+  }
+
+  //F2POOL
+  async function f2poolZEC(page) {
+    try {
+ 
+      await page.setDefaultNavigationTimeout(0);
+      await page.goto('https://www.f2pool.com/');
+      const html = await page.content();
+      const $ = cheerio.load(html);
+
+
+      const poolName = 'F2Pool - ZEC';
+      const profWithFee = parseFloat($("#tab-content-labs > table > tbody > tr:nth-child(2) > td > div > div > div.container-info.col-12.col-lg-6 > div.row.calc-inline.hash-val-container > div > div:nth-child(4) > span.pl-1.profit-val.info-value").text().trim());
+      const fee = parseFloat($("#tab-content-labs > table > tbody > tr:nth-child(2) > td > div > div > div.container-info.col-12.col-lg-6 > div.row.info-content > div:nth-child(10) > span.info-value").text().replace("% PPS", ""));
+      let profitability = parseFloat((profWithFee / ((100 - fee) / 100)).toFixed(8));
+      profitability =  parseFloat((profitability/1000).toFixed(8));
+      const url = 'https://www.f2pool.com/';
+
+      console.log({poolName, profWithFee, fee, profitability, url});
+      return ({ poolName, profWithFee, fee, profitability, url });
+
+    } catch (error) {
+      console.error(error);
+    }
+
+}  
+
+  const scrapingZEC = async () => {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+
+    //profitability calc
+    let arrProf = [];
+    const getSum = (total, numb) => {
+      return total + numb;
+    }
+
+    let scrapMiningPoolHubZEC = await miningPoolHubZEC(page);
+    let profMiningPoolHubZEC = scrapMiningPoolHubZEC.profitability;
+    arrProf.push(profMiningPoolHubZEC)
+
+    let scrapCoinotronZEC = await coinotronZEC(page);
+    let profCoinotronZEC = scrapCoinotronZEC.profitability;
+    arrProf.push(profCoinotronZEC)
+
+    let scrapingF2PoolZEC = await f2poolZEC(page);
+    let profF2PoolZEC = scrapingF2PoolZEC.profitability;
+    arrProf.push(profF2PoolZEC);
+
+
+    let profAvg = arrProf.reduce(getSum);
+    profAvg = parseFloat((profAvg / arrProf.length).toFixed(8));
+
+    //--------------------------------
+
+    const zecMiningPools = {
+      miningPoolHubZEC: scrapMiningPoolHubZEC,
+      coinotronZEC: scrapCoinotronZEC,
+      f2PoolZEC: scrapingF2PoolZEC,
+      avgZECProf: profAvg
+    }
+   
+    res.send({ zecMiningPools });
+   
+  }
+
+  scrapingZEC();
+
+});
+
 
 //********************************************** XMR mining pools**********************************
 app.get('/miningPools/XMR', (req, res) => {
@@ -1097,6 +1230,11 @@ app.get('/miningPools/XMR', (req, res) => {
   })
 
 });
+
+
+//-------------------------------------- XMR scraping ----------------------
+
+
 
 //********************************************** XMC mining pools**********************************
 app.get('/miningPools/XMC', (req, res) => {

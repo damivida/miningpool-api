@@ -7,6 +7,46 @@ const profRound = require('./profRound');
 
 const scrapingETHMain = () => {
 
+
+
+
+
+    //WHAT TO MINE
+async function whatToMine(page) {
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://whattomine.com/coins/151-eth-ethash');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const val1 = $('#hr').val();
+    const val2 = $('.table-active > td:nth-child(3)').text();
+   
+    
+    /* await page.click('#hr', {clickCount:2},);
+    await page.type('#hr', '1')
+    await page.click('#cost', {clickCount:2},);
+    await page.type('#cost', '0.0');
+    //await page.waitForSelector('.')
+     await page.focus('#');
+    await page.click('.btn-primary');
+    //await page.waitForSelector('body > div.container > div:nth-child(6) > div.col-8 > table:nth-child(3) > tbody > tr.table-active > td:nth-child(3)');
+    let profitability = $('.table-active > td:nth-child(3)').text() */
+
+
+    const poolName = 'What to mine - ETH';
+    const lastBlockTime = '';
+    let hp = parseFloat(val1);
+    let coinsPerDay = parseFloat(val2.replace('\n', '').replace('\n', ''));
+    const prof = val2/val1;
+    let profitability =  profRound(prof);
+
+    //console.log({poolName,hp, coinsPerDay, profitability, lastBlockTime});
+    return({poolName, hp, coinsPerDay, profitability, lastBlockTime});
+    
+    
+}
+
     async function miningPoolHubETH(page) {
 
         await page.setDefaultNavigationTimeout(0);
