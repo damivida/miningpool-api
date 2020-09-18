@@ -320,21 +320,29 @@ async function minergateXMR() {
 
 async function moneroCryptoPool() {
 
-    const browser = await puppeteer.launch({headless:false});
-    const page = await browser.newPage(); 
+    try {
 
-    await page.setDefaultNavigationTimeout(0);
-    await page.goto('https://monero.crypto-pool.fr/');
-    const html = await page.content();
-    const $ = cheerio.load(html);
+      const browser = await puppeteer.launch({headless:true});
+      const page = await browser.newPage(); 
+  
+      await page.setDefaultNavigationTimeout(0);
+      await page.goto('https://monero.crypto-pool.fr/');
+      const html = await page.content();
+      const $ = cheerio.load(html);
+  
+      const poolName = 'Monero.crypto-pool';
+      let networkDiff = parseFloat($("#networkDifficulty").text());
+      const netLastRew = parseFloat($("#networkLastReward").text().replace(' XMR', ''))
+      const fee = 0.025;
+      const profitability = ((netLastRew*86400)/networkDiff)+(((netLastRew*86400)/networkDiff)*fee);
+      
+  
+      console.log({networkDiff,netLastRew, profitability});
+      //return(val)
 
-    await page.type('#calcHashRate', '1000000');
-    await page.waitForSelector('#calcHashAmount');
-    await page.focus('#calcHashAmount');
-    const val = $("#calcHashAmount").text();
-
-    console.log(val);
-    return(val)
+    } catch (err) {
+        console.log(err);
+    }
 
 }
 
