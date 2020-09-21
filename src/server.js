@@ -1188,14 +1188,9 @@ app.get('/miningPools/XMR', (req, res) => {
   const whatToMineUrl = `https://whattomine.com/coins/101.json?hr=1000&p=0.0&fee=0&cost=0&hcost=0.07`;
   const viaBtcUrl = `https://www.viabtc.com/res/tools/calculator?coin=XMR`;
  
- 
-
   const whatToMineRequest = axios.get(whatToMineUrl);
   const viaBtcRequest = axios.get(viaBtcUrl);
   
-
-
-
   axios.all([whatToMineRequest, viaBtcRequest]).then(axios.spread((...responses) => {
     const whatToMineResponse = responses[0].data;
     const viaBtcResponse = responses[1].data;
@@ -1276,9 +1271,6 @@ app.get('/miningPools/xmr/crawler', (req, res) => {
 async function minergateXMR(page) {
 
   try {
-
-  const browser = await puppeteer.launch({headless:true});
-  const page = await browser.newPage(); 
 
     await page.setDefaultNavigationTimeout(0);
     await page.goto('https://minergate.com/calculator/cryptonote');
@@ -1377,12 +1369,15 @@ async function minergateXMR(page) {
 app.get('/miningPools/XMC', (req, res) => {
 
   const coinCalculatorsUrl = 'https://www.coincalculators.io/api?name=monero-classic&hashrate=1&power=0&poolfee=0&powercost=0&difficultytime=24';
+  const fairHashUrl = 'https://xmc.fairhash.org/api/stats?update';
 
   const coinCalculatorsRequest = axios.get(coinCalculatorsUrl);
+  const fairHashRequest = axios.get(fairHashUrl);
 
 
-  axios.all([coinCalculatorsRequest]).then(axios.spread((...responses) => {
+  axios.all([coinCalculatorsRequest, fairHashRequest]).then(axios.spread((...responses) => {
     const coincalculatorsResponse = responses[0].data;
+    const fairHashResponse = responses[1].data;
 
     const coinCalculatorsData = {
       poolName: "CoinCalculators",
@@ -1391,13 +1386,28 @@ app.get('/miningPools/XMC', (req, res) => {
     }
 
 
-    let allProfArr = [parseFloat(coinCalculatorsData.profitability)];
+    //-- fairhash calc
+    let networkDiff = fairHashResponse["network"]["difficulty"];
+    let netLastRew = fairHashResponse["network"]["reward"];
+    netLastRew = netLastRew/1000000000000
+    const fee = 0.0;
+    let profitability = ((netLastRew*86400)/networkDiff)+(((netLastRew*86400)/networkDiff)*fee);
+    profFairHash =profitability.toFixed(8);
+
+    const fairHashData = {
+      poolName: "FairHash",
+      difficulty: fairHashResponse["network"]["difficulty"].toString(),
+      profitability: profFairHash,
+      url: 'https://monero.crypto-pool.fr/'
+    }
+
+    let allProfArr = [parseFloat(coinCalculatorsData.profitability), parseFloat(fairHashData.profitability)];
 
     const avgXmcMiningProf = {
       avgXmcProf: averageFunc(allProfArr)
     }
 
-    const xmcMiningPools = { coinCalculatorsData, avgXmcMiningProf };
+    const xmcMiningPools = { coinCalculatorsData, fairHashData, avgXmcMiningProf };
     res.send({ xmcMiningPools });
 
   })).catch(errors => {
@@ -1450,6 +1460,73 @@ app.get('/miningPools/BEAM', (req, res) => {
   })
 
 });
+
+
+//----------------------- BEAM scraping -------------------------
+
+
+app.get('/miningPools/beam/crawler', (req, res) => {
+  
+  async function crypt0zoneBEAM() {
+
+    try {
+  
+      const browser = await puppeteer.launch({headless:true});
+      const page = await browser.newPage(); 
+  
+      await page.setDefaultNavigationTimeout(0);
+      await page.goto('https://crypt0.zone/calculator/details/BEAM?hr=1&pwr=0&ec=0.0&fee=0&selected_exchange=42&cur=USD&average=24h&exchange=0');
+      const html = await page.content();
+      const $ = cheerio.load(html);
+  
+      const poolName = 'Crypt0zone';
+      const profitability = $("#calculator-details-result > div > table > tbody > tr:nth-child(2) > td.text-nowrap.p-2.table-light").text().trim().replace("BEAM", "");
+      let url = 'https://crypt0.zone/calculator/details/BEAM?hr=1&pwr=0&ec=0.0&fee=0&selected_exchange=42&cur=USD&average=24h&exchange=0';
+  
+    console.log({poolName, profitability, url});
+    return({poolName, profitability, url})
+  
+    } catch (err) {
+        console.log(err);
+    }
+  
+  }
+  
+    const scrapingBEAM = async () => {
+      const browser = await puppeteer.launch({ headless: true });
+      const page = await browser.newPage();
+  
+      //profitability calc
+      let arrProf = [];
+      const getSum = (total, numb) => {
+        return total + numb;
+      }
+  
+
+      let scrapingCrypt0Zone = await crypt0zoneBEAM(page);
+      let profCrypt0Zone = scrapingCrypt0Zone.profitability;
+      arrProf.push(profCrypt0Zone);
+  
+  
+      let profAvg = arrProf.reduce(getSum);
+      profAvg = parseFloat((profAvg / arrProf.length).toFixed(8));
+  
+      //--------------------------------
+  
+      const beamMiningPools = {
+        crypt0Zone: scrapingCrypt0Zone
+        
+      }
+     
+      res.send({ beamMiningPools, profAvg.toFixed(8) });
+     
+    }
+  
+    scrapingBEAM();
+  
+  });
+
+
 
 
 

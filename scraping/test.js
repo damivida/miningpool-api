@@ -317,7 +317,7 @@ async function minergateXMR() {
   }
 
 
-  minergateXMR()
+  //minergateXMR()
 
 async function moneroCryptoPool() {
 
@@ -348,3 +348,32 @@ async function moneroCryptoPool() {
 }
 
 //moneroCryptoPool()
+
+
+//-- BEAM
+async function crypt0zoneBEAM() {
+
+  try {
+
+    const browser = await puppeteer.launch({headless:true});
+    const page = await browser.newPage(); 
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://crypt0.zone/calculator/details/BEAM?hr=1&pwr=0&ec=0.0&fee=0&selected_exchange=42&cur=USD&average=24h&exchange=0');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const poolName = 'Crypt0zone';
+    const profitability = $("#calculator-details-result > div > table > tbody > tr:nth-child(2) > td.text-nowrap.p-2.table-light").text().trim().replace("BEAM", "");
+    let url = 'https://crypt0.zone/calculator/details/BEAM?hr=1&pwr=0&ec=0.0&fee=0&selected_exchange=42&cur=USD&average=24h&exchange=0';
+
+  console.log({poolName, profitability, url});
+  return({poolName, profitability, url})
+
+  } catch (err) {
+      console.log(err);
+  }
+
+}
+
+crypt0zoneBEAM()
