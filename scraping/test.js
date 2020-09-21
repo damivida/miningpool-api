@@ -301,6 +301,7 @@ async function minergateXMR() {
 
       const poolName = 'Minergate - XMR';
       let profitability = $("#app > div > div.main-app-container > div.container > div > div > div > div:nth-child(3) > table > tbody:nth-child(3) > tr:nth-child(1) > td:nth-child(3) > span:nth-child(1)").text();
+     // console.log(profitability);
       profitability = parseFloat((profitability/1000).toFixed(8))
       let url = 'https://minergate.com/calculator/cryptonote';
 
@@ -316,7 +317,7 @@ async function minergateXMR() {
   }
 
 
- // minergateXMR()
+  minergateXMR()
 
 async function moneroCryptoPool() {
 
@@ -346,4 +347,4 @@ async function moneroCryptoPool() {
 
 }
 
-moneroCryptoPool()
+//moneroCryptoPool()

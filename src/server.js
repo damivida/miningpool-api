@@ -1260,10 +1260,11 @@ app.get('/miningPools/xmr/crawler', (req, res) => {
       const netLastRew = $("#networkLastReward").text().replace(' XMR', '');
       const fee = 0.025;
       let profitability = ((netLastRew*86400)/networkDiff)+(((netLastRew*86400)/networkDiff)*fee);
-      profitability = profitability.toFixed(8);
+      profitability = parseFloat(profitability.toFixed(8));
+      let url = 'https://monero.crypto-pool.fr/';
   
       //console.log({networkDiff,netLastRew, profitability});
-    return({networkDiff,netLastRew, profitability})
+    return({networkDiff,netLastRew, profitability, url})
 
     } catch (err) {
         console.log(err);
@@ -1271,9 +1272,38 @@ app.get('/miningPools/xmr/crawler', (req, res) => {
 
 }
 
+
+async function minergateXMR(page) {
+
+  try {
+
+  const browser = await puppeteer.launch({headless:true});
+  const page = await browser.newPage(); 
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://minergate.com/calculator/cryptonote');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const poolName = 'Minergate - XMR';
+    let profitability = $("#app > div > div.main-app-container > div.container > div > div > div > div:nth-child(3) > table > tbody:nth-child(3) > tr:nth-child(1) > td:nth-child(3) > span:nth-child(1)").text();
+   // console.log(profitability);
+    profitability = parseFloat((profitability/1000).toFixed(8))
+    let url = 'https://minergate.com/calculator/cryptonote';
+
+
+    console.log({ poolName, profitability,url });
+    return ({ poolName, profitability,url  });
+
+  } catch (err) {
+    console.log(err);
+
+  }
+
+}
   
-   /*  //F2POOL
-    async function f2poolZEC(page) {
+    //F2POOL
+    async function f2poolXMR(page) {
       try {
    
         await page.setDefaultNavigationTimeout(0);
@@ -1282,21 +1312,21 @@ app.get('/miningPools/xmr/crawler', (req, res) => {
         const $ = cheerio.load(html);
   
   
-        const poolName = 'F2Pool - ZEC';
-        const profWithFee = parseFloat($("#tab-content-labs > table > tbody > tr:nth-child(2) > td > div > div > div.container-info.col-12.col-lg-6 > div.row.calc-inline.hash-val-container > div > div:nth-child(4) > span.pl-1.profit-val.info-value").text().trim());
-        const fee = parseFloat($("#tab-content-labs > table > tbody > tr:nth-child(2) > td > div > div > div.container-info.col-12.col-lg-6 > div.row.info-content > div:nth-child(10) > span.info-value").text().replace("% PPS", ""));
+        const poolName = 'F2Pool - XMR';
+        const profWithFee = parseFloat($("#tab-content-main > table > tbody > tr:nth-child(20) > td > div > div > div.container-info.col-12.col-lg-6 > div.row.calc-inline.hash-val-container > div > div:nth-child(4) > span.pl-1.profit-val.info-value").text().trim());
+        const fee = parseFloat($("#tab-content-main > table > tbody > tr:nth-child(20) > td > div > div > div.container-info.col-12.col-lg-6 > div.row.info-content > div:nth-child(10) > span.info-value").text().replace("% PPS", ""));
         let profitability = parseFloat((profWithFee / ((100 - fee) / 100)).toFixed(8));
         profitability =  parseFloat((profitability/1000).toFixed(8));
         const url = 'https://www.f2pool.com/';
   
-        console.log({poolName, profWithFee, fee, profitability, url});
+        //console.log({poolName, profWithFee, fee, profitability, url});
         return ({ poolName, profWithFee, fee, profitability, url });
   
       } catch (error) {
         console.error(error);
       }
   
-  }   */
+  }  
   
     const scrapingXMR = async () => {
       const browser = await puppeteer.launch({ headless: true });
@@ -1310,11 +1340,16 @@ app.get('/miningPools/xmr/crawler', (req, res) => {
   
       let scrapingMoneroCryptoPool = await moneroCryptoPool(page);
       let profMoneroCryptoPool = scrapingMoneroCryptoPool.profitability;
-      arrProf.push(profMoneroCryptoPool)
-  
-      /* let scrapingF2PoolZEC = await f2poolZEC(page);
-      let profF2PoolZEC = scrapingF2PoolZEC.profitability;
-      arrProf.push(profF2PoolZEC); */
+      arrProf.push(profMoneroCryptoPool);
+
+
+      let scrapingMinergateXMR = await minergateXMR(page);
+      let profMiergateXMR = scrapingMinergateXMR.profitability;
+      arrProf.push(profMiergateXMR);
+
+      let scrapingF2PoolXMR = await f2poolXMR(page);
+      let profF2PoolXMR = scrapingF2PoolXMR.profitability;
+      arrProf.push(profF2PoolXMR); 
   
   
       let profAvg = arrProf.reduce(getSum);
@@ -1324,11 +1359,12 @@ app.get('/miningPools/xmr/crawler', (req, res) => {
   
       const xmrMiningPools = {
         moneroCryptoPool: scrapingMoneroCryptoPool,
-        //f2PoolZEC: scrapingF2PoolZEC,
+        f2PoolXMR: scrapingF2PoolXMR,
+        minergateXMR: scrapingMinergateXMR
         
       }
      
-      res.send({ xmrMiningPools });
+      res.send({ xmrMiningPools, profAvg });
      
     }
   
