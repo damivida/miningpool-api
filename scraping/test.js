@@ -376,4 +376,39 @@ async function crypt0zoneBEAM() {
 
 }
 
-crypt0zoneBEAM()
+//crypt0zoneBEAM()
+
+
+async function etherscanETH() {
+
+  try {
+
+    const browser = await puppeteer.launch({headless:false});
+    const page = await browser.newPage(); 
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://etherscan.io/ether-mining-calculator');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    await page.waitForSelector('#ContentPlaceHolder1_btnSubmit');
+    await page.click('#ContentPlaceHolder1_btnSubmit', {clickCount:2});
+    
+
+    await page.waitForSelector('#ContentPlaceHolder1_divresults > div > table > tbody > tr:nth-child(2) > td:nth-child(2)');
+    await page.focus('#ContentPlaceHolder1_divresults > div > table > tbody > tr:nth-child(2) > td:nth-child(2)');
+    const profitability = $("#ContentPlaceHolder1_divresults > div > table > tbody > tr:nth-child(2) > td:nth-child(2)").text().replace(" ($0.4455)", "");
+    const poolName = 'Etherscan';
+
+    console.log(profitability);
+    console.log({poolName, profitability});
+    return({poolName, profitability});
+
+  } catch (err) {
+      console.log(err);
+  }
+
+}
+
+
+etherscanETH()

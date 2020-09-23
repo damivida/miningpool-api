@@ -267,10 +267,20 @@ app.get('/miningPools/etc/crawler', (req, res) => {
 
     const poolName = 'Coinotron - ETC';
     const lastBlockTime = $('#row0TableSolvedBlocksETC > td:nth-child(2)').text();
-    const hp = parseFloat($('#row0TableBestMinersETC > td:nth-child(3)').text().replace(' MH', ''));
+    const hp = parseFloat($('#row0TableBestMinersETC > td:nth-child(3)').text().replace(' GH', ''));
     let coinsPerDay = parseFloat($('#row0TableBestMinersETC > td:nth-child(4)').text());
+
+    let hpString = $('#row0TableBestMinersETC > td:nth-child(3)').text();
+    hpString = hpString.slice(4,6)
     //let prof = (coinsPerDay/hp);
+
     let profitability = parseFloat((coinsPerDay / hp).toFixed(8));
+
+    if(hpString == 'GH') {
+      profitability = profitability/1000;
+    }
+    
+  
     let url = 'https://www.coinotron.com/app?action=statistics';
 
     return ({ poolName, hp, coinsPerDay, profitability, lastBlockTime, url });
@@ -363,11 +373,11 @@ app.get('/miningPools/LTC', (req, res) => {
 
     let viaBtcProf = viaBtcResponse["data"][0]["profit"]["LTC"];
     viaBtcProf = viaBtcProf / 1000;
-    viaBtcProf = viaBtcProf.toString()
+    viaBtcProf = viaBtcProf.toFixed(8);
 
     let poolInProf = poolInResponse["data"]["LTC"]["rewards_per_unit"];
     poolInProf = poolInProf / 1000;
-    poolInProf = poolInProf.toString();
+    poolInProf = poolInProf.toFixed(8);
 
 
     const whatToMineData = {
@@ -705,7 +715,7 @@ app.get('/miningPools/BCH', (req, res) => {
 
     const btcComData = {
       poolName: "BtcCom",
-      profitability: btcComResponse["data"]["bch"]["income_coin"].toFixed(8).toString(),
+      profitability: btcComResponse["data"]["bch"]["income_optimize_coin"].toFixed(8).toString(),
       url: 'https://btc.com/tools/mini-mining-calculator'
     }
 
@@ -933,7 +943,7 @@ app.get('/miningPools/dash/crawler', (req, res) => {
       profitability =  parseFloat((profitability/1000).toFixed(8));
       const url = 'https://www.f2pool.com/';
 
-      console.log({poolName, profWithFee, fee, profitability, url});
+     // console.log({poolName, profWithFee, fee, profitability, url});
       return ({ poolName, profWithFee, fee, profitability, url });
 
     } catch (error) {
@@ -1284,8 +1294,8 @@ async function minergateXMR(page) {
     let url = 'https://minergate.com/calculator/cryptonote';
 
 
-    console.log({ poolName, profitability,url });
-    return ({ poolName, profitability,url  });
+    //console.log({ poolName, profitability,url });
+    return ({ poolName, profitability, url  });
 
   } catch (err) {
     console.log(err);
@@ -1398,7 +1408,7 @@ app.get('/miningPools/XMC', (req, res) => {
       poolName: "FairHash",
       difficulty: fairHashResponse["network"]["difficulty"].toString(),
       profitability: profFairHash,
-      url: 'https://monero.crypto-pool.fr/'
+      url: 'https://xmc.fairhash.org/'
     }
 
     let allProfArr = [parseFloat(coinCalculatorsData.profitability), parseFloat(fairHashData.profitability)];
@@ -1518,7 +1528,7 @@ app.get('/miningPools/beam/crawler', (req, res) => {
         
       }
      
-      res.send({ beamMiningPools, profAvg.toFixed(8) });
+      res.send({ beamMiningPools, profAvg });
      
     }
   
