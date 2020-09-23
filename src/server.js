@@ -614,12 +614,14 @@ async function coinWarzBTC(page) {
       const poolName = 'CoinWarz';
       const hp = parseFloat($("[class='form-control numeric']").attr('value'));
       const coinsPerDay = parseFloat($("#left-col > main > section > section:nth-child(12) > div > table > tbody > tr:nth-child(2) > td:nth-child(2)").text().trim());
+      const difficulty = parseFloat($("[id=d]").attr('value'));
+      const blockReward = parseFloat($("[id=r]").attr('value'));
       const url = "https://www.coinwarz.com/mining/bitcoin/calculator";
       const profitability = parseFloat((coinsPerDay / hp).toFixed(8));
-
+      
 
       //console.log({ poolName, coinsPerDay, hp, profitability, url });
-       return({poolName, coinsPerDay, hp, profitability, url});
+       return({poolName, coinsPerDay, hp, difficulty, blockReward, profitability, url});
 
 
   } catch (error) {
@@ -627,6 +629,29 @@ async function coinWarzBTC(page) {
   }
 
 }
+
+
+//---BitinfoCharts
+
+async function bitinfochartsBTC(page) {
+
+  try {
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://bitinfocharts.com/bitcoin/');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const trxfee = $('#tdid13 > span.text-success > abbr:nth-child(2)').text();
+    //console.log(fee);
+    return(trxfee);
+
+  } catch (err) {
+      console.log(err);
+  }
+
+}
+
 
 
   const scrapingBTC = async () => {
@@ -646,10 +671,19 @@ async function coinWarzBTC(page) {
 
     let profF2PoolBTC = scrapF2PoolBTC.profitability;
     let profCoinWarzBTC = scrapCoinWarzBTC.profitability;
-    
-    arrProf.push(profF2PoolBTC, profCoinWarzBTC)
 
-    //arrProf.reduce(getSum)
+    //-- bitInfo charts
+    let diffCoinWarzBTC = scrapCoinWarzBTC.difficulty;
+    let blockReward = scrapCoinWarzBTC.blockReward;
+    let trxFee = await bitinfochartsBTC(page);
+    //trxFee = parseFloat(trxFee);
+    let totalRew = parseFloat(trxFee) + blockReward;
+    let profBitinfochartsBTC = (totalRew * 1000000000000 * 600 * 144) / (diffCoinWarzBTC * 4294967296)
+    profBitinfochartsBTC = parseFloat(profBitinfochartsBTC.toFixed(8));
+
+    arrProf.push(profF2PoolBTC, profCoinWarzBTC, profBitinfochartsBTC)
+
+    
 
     let profAvg = arrProf.reduce(getSum);
     profAvg = parseFloat((profAvg / arrProf.length).toFixed(8));
@@ -658,10 +692,16 @@ async function coinWarzBTC(page) {
 
     const btcMiningPools = {
       f2PoolBTC: scrapF2PoolBTC,
-      coinwarzBTC: scrapCoinWarzBTC
+      coinwarzBTC: scrapCoinWarzBTC,
+      bitInfoChartsBTC: { 
+        poolName: "bitInfoCharts",
+        trxFeeInBlock: parseFloat(trxFee),
+        profitability: profBitinfochartsBTC,
+      },
+      
     }
 
-    res.send({ btcMiningPools });
+    res.send({ btcMiningPools, profAvg });
 
   }
 
@@ -1061,7 +1101,6 @@ app.get('/miningPools/ZEC', (req, res) => {
 
 //-------------------------ZEC scraping
 
-
 app.get('/miningPools/zec/crawler', (req, res) => {
 
 async function miningPoolHubZEC(page) {
@@ -1248,7 +1287,6 @@ app.get('/miningPools/XMR', (req, res) => {
 
 //-------------------------------------- XMR scraping ----------------------
 
-
 app.get('/miningPools/xmr/crawler', (req, res) => {
   
   async function moneroCryptoPool(page) {
@@ -1428,7 +1466,6 @@ app.get('/miningPools/XMC', (req, res) => {
 
 
 //********************************************** BEAM mining pools**********************************
-
 app.get('/miningPools/BEAM', (req, res) => {
 
   const whatToMineUrl = `https://whattomine.com/coins/294.json?hr=1&p=0.0&fee=0&cost=0&hcost=0.0`

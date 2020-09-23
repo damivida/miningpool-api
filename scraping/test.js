@@ -411,4 +411,29 @@ async function etherscanETH() {
 }
 
 
-etherscanETH()
+//etherscanETH()
+
+
+async function bitinfochartsBTC() {
+
+  try {
+
+    const browser = await puppeteer.launch({headless:false});
+    const page = await browser.newPage(); 
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://bitinfocharts.com/bitcoin/');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const fee = $('#tdid13 > span.text-success > abbr:nth-child(2)').text();
+    console.log(fee);
+    return(fee);
+
+  } catch (err) {
+      console.log(err);
+  }
+
+}
+
+bitinfochartsBTC();
