@@ -27,8 +27,10 @@ app.get('/miningPools/ETH', (req, res) => {
     const poolInResponse = responses[2].data;
 
     const viaBtcProf = viaBtcResponse["data"][0]["profit"]["ETH"];
-    let viaBtcProfNoFee = viaBtcProf / 0.97;
-
+    const fee = viaBtcResponse["data"][0]["pps_fee_rate"];
+    const correctionFactor = 0.004;
+    const feeCorrected = fee - correctionFactor;
+    let viaBtcProfNoFee = (viaBtcProf/((100-(feeCorrected*100))/100)).toFixed(8);
 
     const whatToMineData = {
       poolName: "WhatToMine",
@@ -38,7 +40,9 @@ app.get('/miningPools/ETH', (req, res) => {
 
     const viaBtcData = {
       poolName: "ViaBtc",
-      profitability: viaBtcResponse["data"][0]["profit"]["ETH"],
+      fee: fee,
+      miningRewardWithFee: viaBtcResponse["data"][0]["profit"]["ETH"],
+      profitability: viaBtcProfNoFee,
       url: 'https://www.viabtc.com/tools/calculator?symbol=ETH'
     }
 
@@ -708,9 +712,6 @@ async function bitinfochartsBTC(page) {
   scrapingBTC();
 
 });
-
-
-
 
 
 //**********************************************BCH mining pools**********************************
