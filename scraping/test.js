@@ -436,4 +436,29 @@ async function bitinfochartsBTC() {
 
 }
 
-bitinfochartsBTC();
+//bitinfochartsBTC();
+
+
+async function bitinfochartsBCH() {
+
+  try {
+
+    const browser = await puppeteer.launch({headless:true});
+    const page = await browser.newPage(); 
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://bitinfocharts.com/bitcoin%20cash/');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const trxFee = $('#tdid13 > span.text-success > abbr:nth-child(2)').text();
+    console.log(trxFee);
+    return(trxFee);
+
+  } catch (err) {
+      console.log(err);
+  }
+
+}
+
+bitinfochartsBCH()

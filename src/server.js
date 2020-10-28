@@ -30,10 +30,17 @@ app.get('/miningPools/ETH', (req, res) => {
     const sparkPoolRespanse = responses[3].data;
 
     const viaBtcProf = viaBtcResponse["data"][0]["profit"]["ETH"];
+<<<<<<< HEAD
     let viaBtcProfNoFee = viaBtcProf / 0.97;
 
     const sparPoolProf = sparkPoolRespanse["data"]["meanIncome24h"];
 
+=======
+    const fee = viaBtcResponse["data"][0]["pps_fee_rate"];
+    const correctionFactor = 0.004;
+    const feeCorrected = fee - correctionFactor;
+    let viaBtcProfNoFee = (viaBtcProf/((100-(feeCorrected*100))/100)).toFixed(8);
+>>>>>>> d97041704757f3ece8164886b1b7b4aff6cf279d
 
     const whatToMineData = {
       poolName: "WhatToMine",
@@ -43,7 +50,13 @@ app.get('/miningPools/ETH', (req, res) => {
 
     const viaBtcData = {
       poolName: "ViaBtc",
+<<<<<<< HEAD
       profitability: parseFloat(viaBtcResponse["data"][0]["profit"]["ETH"]),
+=======
+      fee: fee,
+      miningRewardWithFee: viaBtcResponse["data"][0]["profit"]["ETH"],
+      profitability: viaBtcProfNoFee,
+>>>>>>> d97041704757f3ece8164886b1b7b4aff6cf279d
       url: 'https://www.viabtc.com/tools/calculator?symbol=ETH'
     }
 
@@ -728,9 +741,6 @@ async function bitinfochartsBTC(page) {
 });
 
 
-
-
-
 //**********************************************BCH mining pools**********************************
 
 app.get('/miningPools/BCH', (req, res) => {
@@ -811,13 +821,15 @@ async function coinWarzBCH(page) {
 
       const poolName = 'CoinWarz';
       const hp = parseFloat($("[class='form-control numeric']").attr('value'));
+      const difficulty = parseFloat($("[id = 'd']").attr("value"));
+      const blockReward = parseFloat($("[id = 'r']").attr("value"));
       const coinsPerDay = parseFloat($("#left-col > main > section > section:nth-child(12) > div > table > tbody > tr:nth-child(2) > td:nth-child(2)").text().trim());
       const url = "https://www.coinwarz.com/mining/bitcoincash/calculator";
       const profitability = parseFloat((coinsPerDay / hp).toFixed(8));
 
 
       //console.log({ poolName, coinsPerDay, hp, profitability, url });
-       return({poolName, coinsPerDay, hp, profitability, url});
+       return({poolName, coinsPerDay, hp, difficulty, blockReward, profitability, url});
 
 
   } catch (error) {
@@ -825,6 +837,29 @@ async function coinWarzBCH(page) {
   }
 
 }
+
+
+//- bitInfo charts
+
+async function bitinfochartsBCH(page) {
+
+  try {
+
+    await page.setDefaultNavigationTimeout(0);
+    await page.goto('https://bitinfocharts.com/bitcoin%20cash/');
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const trxFee = $('#tdid13 > span.text-success > abbr:nth-child(2)').text();
+    //console.log(trxFee);
+    return(trxFee);
+
+  } catch (err) {
+      console.log(err);
+  }
+
+}
+
 
 
   const scrapingBCH = async () => {
@@ -839,10 +874,18 @@ async function coinWarzBCH(page) {
     }
 
     let scrapCoinWarzBCH = await coinWarzBCH(page);
-
     let profCoinWarzBCH = scrapCoinWarzBCH.profitability;
+
+    //-bitInfo charts
+    let diffCoinWarzBCH = scrapCoinWarzBCH.difficulty;
+    let blockReward = scrapCoinWarzBCH.blockReward;
+    let trxFee = await bitinfochartsBCH(page);
+
+    let totalRew = parseFloat(trxFee) + blockReward;
+    let profBitinfochartsBCH = (totalRew * 1000000000000 * 600 * 144) / (diffCoinWarzBCH * 4294967296)
+    profBitinfochartsBCH = parseFloat(profBitinfochartsBCH.toFixed(8));
     
-    arrProf.push(profCoinWarzBCH)
+    arrProf.push(profCoinWarzBCH, profBitinfochartsBCH)
 
     let profAvg = arrProf.reduce(getSum);
     profAvg = parseFloat((profAvg / arrProf.length).toFixed(8));
@@ -851,6 +894,12 @@ async function coinWarzBCH(page) {
 
     const bchMiningPools = {
       coinwarzBCH: scrapCoinWarzBCH,
+      bitInfoChartsBCH: { 
+        poolName: "bitInfoCharts",
+        trxFeeInBlock: parseFloat(trxFee),
+        profitability: profBitinfochartsBCH,
+        url: "https://bitinfocharts.com/bitcoin%20cash/"
+      }
     }
 
     res.send({ bchMiningPools });
