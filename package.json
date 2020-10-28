@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/app.js",
+    "dev": "nodemon src/server.js"
   },
   "author": "",
   "license": "ISC",
@@ -12,7 +13,9 @@
     "axios": "^0.20.0",
     "cheerio": "^1.0.0-rc.3",
     "express": "^4.17.1",
-    "nodemon": "^2.0.4",
     "puppeteer": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
   }
 }

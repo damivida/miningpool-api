@@ -15,47 +15,60 @@ app.get('/miningPools/ETH', (req, res) => {
   const whatToMineUrl = `https://whattomine.com/coins/151.json?hr=1&p=0.0&fee=0&cost=0&hcost=0.07`;
   const viaBtcUrl = `https://www.viabtc.com/res/tools/calculator?coin=ETH`;
   const poolInUrl = 'https://api-prod.poolin.com/api/public/v2/basedata/coins/block_stats';
+  const sparkPoolUrl = 'https://www.sparkpool.com/v1/pool/stats';
 
   const whatToMineRequest = axios.get(whatToMineUrl);
   const viaBtcRequest = axios.get(viaBtcUrl);
   const poolInRequest = axios.get(poolInUrl);
+  const sarkPoolRequest = axios.get(sparkPoolUrl);
 
 
-  axios.all([whatToMineRequest, viaBtcRequest, poolInRequest]).then(axios.spread((...responses) => {
+  axios.all([whatToMineRequest, viaBtcRequest, poolInRequest, sarkPoolRequest]).then(axios.spread((...responses) => {
     const whatToMineResponse = responses[0].data;
     const viaBtcResponse = responses[1].data;
     const poolInResponse = responses[2].data;
+    const sparkPoolRespanse = responses[3].data;
 
     const viaBtcProf = viaBtcResponse["data"][0]["profit"]["ETH"];
     let viaBtcProfNoFee = viaBtcProf / 0.97;
 
+    const sparPoolProf = sparkPoolRespanse["data"]["meanIncome24h"];
+
 
     const whatToMineData = {
       poolName: "WhatToMine",
-      profitability: whatToMineResponse["estimated_rewards"],
+      profitability: parseFloat(whatToMineResponse["estimated_rewards"]),
       url: 'https://whattomine.com/coins/151-eth-ethash?hr=1&p=420.0&fee=0.0&cost=0.0&hcost=0.0&commit=Calculate'
     }
 
     const viaBtcData = {
       poolName: "ViaBtc",
-      profitability: viaBtcResponse["data"][0]["profit"]["ETH"],
+      profitability: parseFloat(viaBtcResponse["data"][0]["profit"]["ETH"]),
       url: 'https://www.viabtc.com/tools/calculator?symbol=ETH'
     }
 
     const poolInData = {
       poolName: "Poolin",
-      profitability: poolInResponse["data"]["ETH"]["rewards_per_unit"],
+      profitability: parseFloat(poolInResponse["data"]["ETH"]["rewards_per_unit"]),
       url: 'https://www.poolin.com/tools/mini-calc?type=eth'
     }
 
-
-    let allProfArr = [parseFloat(whatToMineData.profitability), parseFloat(viaBtcData.profitability), parseFloat(poolInData.profitability)];
-
-    const avgEthMiningProf = {
-      avgETHProf: averageFunc(allProfArr)
+    const sparkPoolData = {
+      poolName: "SparkPool",
+      profitability: parseFloat(sparkPoolRespanse["data"][0]["meanIncome24h"]/100),
+      url: 'https://www.sparkpool.com/en/token/ETH#chart2'
     }
 
-    const ethMiningPools = { whatToMineData, viaBtcData, poolInData, avgEthMiningProf };
+
+    //let allProfArr = [parseFloat(whatToMineData.profitability), parseFloat(viaBtcData.profitability), parseFloat(poolInData.profitability), parseFloat(sparkPoolData.profitability)];
+
+    let allProfArr = [whatToMineData.profitability, viaBtcData.profitability, poolInData.profitability, sparkPoolData.profitability];
+
+    const avgEthMiningProf = {
+      avgETHProf: parseFloat(averageFunc(allProfArr))
+    }
+
+    const ethMiningPools = { whatToMineData, viaBtcData, poolInData, sparkPoolData, avgEthMiningProf };
     res.send({ ethMiningPools });
 
   })).catch(errors => {
@@ -71,27 +84,32 @@ app.get('/miningPools/eth/crawler', (req, res) => {
 
   async function miningPoolHubETH(page) {
 
-    await page.setDefaultNavigationTimeout(0);
-    await page.goto('https://ethereum.miningpoolhub.com/index.php?page=statistics&action=pool');
-    const html = await page.content();
-    const $ = cheerio.load(html);
+    try {
 
-    const poolName = 'Mining Pool Hub - ETH';
-    let lastBlockTime = $('#main > div:nth-child(2) > article:nth-child(2) > div > table > tbody > tr:nth-child(8) > td').text();
-    let hp = parseFloat($('#main > div:nth-child(2) > article:nth-child(1) > div > table > tbody > tr:nth-child(1) > td:nth-child(4)')
-      .text()
-      .replace(',', '')
-      .replace(',', '')
-      .replace(',', ''));
-
-    let coinsPerDay = parseFloat($('#main > div:nth-child(2) > article:nth-child(1) > div > table > tbody > tr:nth-child(1) > td:nth-child(5)').text());
-    let prof = (coinsPerDay / hp) * 1000;
-    let profitability = profRound(prof)
-    let url = 'https://ethereum.miningpoolhub.com/index.php?page=statistics&action=pool';
-
-    //console.log({poolName, hp, coinsPerDay, profitability, lastBlockTime});
-
-    return ({ poolName, hp, coinsPerDay, profitability, lastBlockTime, url });
+      await page.setDefaultNavigationTimeout(0);
+      await page.goto('https://ethereum.miningpoolhub.com/index.php?page=statistics&action=pool');
+      const html = await page.content();
+      const $ = cheerio.load(html);
+  
+      const poolName = 'Mining Pool Hub - ETH';
+      let lastBlockTime = $('#main > div:nth-child(2) > article:nth-child(2) > div > table > tbody > tr:nth-child(8) > td').text();
+      let hp = parseFloat($('#main > div:nth-child(2) > article:nth-child(1) > div > table > tbody > tr:nth-child(1) > td:nth-child(4)')
+        .text()
+        .replace(',', '')
+        .replace(',', '')
+        .replace(',', ''));
+  
+      let coinsPerDay = parseFloat($('#main > div:nth-child(2) > article:nth-child(1) > div > table > tbody > tr:nth-child(1) > td:nth-child(5)').text());
+      let prof = (coinsPerDay / hp) * 1000;
+      let profitability = profRound(prof)
+      let url = 'https://ethereum.miningpoolhub.com/index.php?page=statistics&action=pool';
+  
+      //console.log({poolName, hp, coinsPerDay, profitability, lastBlockTime});
+  
+      return ({ poolName, hp, coinsPerDay, profitability, lastBlockTime, url });
+    } catch (e) {
+      console.log(e);
+    }
 
   }
 
